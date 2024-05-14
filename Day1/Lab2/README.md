@@ -20,6 +20,13 @@ Here we install Langchain framework and langchain-openai responsible for OpenAI 
 ```python
 import os
 from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda
+from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain.output_parsers.openai_tools import PydanticToolsParser
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 os.environ["OPENAI_API_KEY"] = "YOUR_KEY_HERE"
 
@@ -46,6 +53,8 @@ So the chain will looks like this: generate post content -> correct the post -> 
 1. First, generating the post content:
 
 ```python
+output_parser = StrOutputParser()
+
 generate_content_prompt = ChatPromptTemplate.from_template("Based the outline: {outline} generate me a LinkedIn post. Use AIDA model. Do not generate hashtags. Use {language} language")
 
 generate_content_chain = generate_content_prompt | gpt4 | output_parser
@@ -77,8 +86,6 @@ dalle_metaprompt = ChatPromptTemplate.from_template("Generate a detailed prompt 
 4. In order to generate image we need to execute **DallEAPIWrapper().run()** method. However **DallEAPIWrapper** does not implements **Runnable** interface. That is why we need to wrap it in a function and use **RunnableLambda** that transform a function into **Runnable**:
 
 ```python
-from langchain_core.runnables import RunnableLambda
-
 def run_dalle(prompt):
   return DallEAPIWrapper().run(prompt + " High resolution, 2K, 4K, 8K, clear, good lighting, detailed, extremely detailed, sharp focus, intricate, beautiful, realistic+++, complementary colors, high quality, hyper detailed, masterpiece, best quality, artstation, stunning")
 ```
@@ -112,8 +119,6 @@ It works, however it is not what we are looking for. As a result we want to have
 7. Let's use a **RunnableParallel** class. It can execute multiple chains in parallel. First let's define two chains. One for dalle and second for hashtags:
 
 ```python
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-
 dalle_chain = dalle_metaprompt | gpt4 | output_parser | RunnableLambda(run_dalle)
 
 def hashtags_to_string(hashtag_generator):
