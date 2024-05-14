@@ -78,9 +78,9 @@ print(post)
 3. Now the correction prompt and dalle metaprompt:
 
 ```python
-correction_prompt = ChatPromptTemplate.from_template("Correct this LinkedIn post: {post}. Remove errors and unnecessary interjections. Add emojis. Do not change language")
+correction_prompt = ChatPromptTemplate.from_template("Correct this LinkedIn post: {post}. Remove errors, unnecessary interjections and AIDA expressions. Add emojis. Do not change language")
 
-dalle_metaprompt = ChatPromptTemplate.from_template("Generate a detailed prompt to generate a photograph for the LinkedIn post. Here is the post text: '{post}'.")
+dalle_metaprompt = ChatPromptTemplate.from_template("Generate a detailed prompt to generate a photograph for the LinkedIn post. Here is the post text: '{post}'. Use maximum 3 sentences")
 ```
 
 4. In order to generate image we need to execute **DallEAPIWrapper().run()** method. However **DallEAPIWrapper** does not implements **Runnable** interface. That is why we need to wrap it in a function and use **RunnableLambda** that transform a function into **Runnable**:
