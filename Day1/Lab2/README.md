@@ -15,7 +15,7 @@ In this lab you will build a simple LinkedIn post generator.
 ```
 
 Here we install Langchain framework and langchain-openai responsible for OpenAI integration.
-1. In the next cell paste your OpenAI API key and create an instance of gpt-3.5 model:
+1. In the next cell paste your OpenAI API key and create an instance of gpt-4 model:
 
 ```python
 import os
@@ -138,7 +138,34 @@ chain = (
 )
 ```
 We also used here **RunnablePassthrough** class that just passes the input into the output unchanged. This typically is used in conjuction with RunnableParallel to pass data through to a new key in the map.
-9. Let's invoke it and see the result:
+9. Create helper function:
+
+```python
+def display_image(image_url):
+  try:
+      import google.colab
+
+      IN_COLAB = True
+  except ImportError:
+      IN_COLAB = False
+
+  if IN_COLAB:
+      from google.colab.patches import cv2_imshow  # for image display
+      from skimage import io
+
+      image = io.imread(image_url)
+      cv2_imshow(image)
+  else:
+      import cv2
+      from skimage import io
+
+      image = io.imread(image_url)
+      cv2.imshow("image", image)
+      cv2.waitKey(0)  # wait for a keyboard input
+      cv2.destroyAllWindows()
+```
+
+10. Invoke the generator!
 
 ```python
 result = chain.invoke({"outline": outline, "language": "polish"})
@@ -147,8 +174,8 @@ print(result["hashtags"])
 display_image(result["image"])
 ```
 
-10. Investigate the LangSmith!
-11. Put the post on your LinkedIn ;)
+11. Investigate the LangSmith!
+12. Put the post on your LinkedIn ;)
 
 ## End lab
 

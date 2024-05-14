@@ -123,6 +123,7 @@ print(chain.invoke({"dish": "pizza"}))
 ```python
 ingredients_prompt = ChatPromptTemplate.from_template("Based on the recipe: {recipe} list me all ingredients needed for the recipe. Return just the list and nothing else")
 ```
+
 5. Now create a full chain. Notice that we are using two LLMs here. We are also using simple lambda function to pass output as a new input:
 
 ```python
