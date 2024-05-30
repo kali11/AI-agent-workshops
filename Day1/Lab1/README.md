@@ -164,6 +164,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 # add tool
 @tool
 def add(a: int, b: int) -> int:
+    "Add two numbers"
     return a + b
 
 # multiply tool
