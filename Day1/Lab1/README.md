@@ -190,7 +190,7 @@ gpt35_with_tools = gpt35.bind_tools(tools)
 
 3. Let's call it and observe how LLM model has used the tools:
 ```python
-result = llm_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
+result = gpt35_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
 result
 ```
 
