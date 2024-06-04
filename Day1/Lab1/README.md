@@ -164,14 +164,23 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 # add tool
 @tool
 def add(a: int, b: int) -> int:
+    "Add two numbers"
     return a + b
 
 # multiply tool
-class multiply(BaseModel):
+class Multiply(BaseModel):
     a: int = Field(..., description="First integer")
     b: int = Field(..., description="Second integer")
 
-tools = [add, multiply]
+    def execute(self) -> int:
+        return self.a * self.b
+
+@tool
+def multiply_tool(data: Multiply) -> int:
+    "Multiply two numbers"
+    return data.execute()
+
+tools = [add, multiply_tool]
 ```
 2. Now we need to bind these tools to our LLM so it can invoke them. Note, that by default LLM will decide if it wants to use a tool or not. We can also enforce it.
 
@@ -181,7 +190,7 @@ gpt35_with_tools = gpt35.bind_tools(tools)
 
 3. Let's call it and observe how LLM model has used the tools:
 ```python
-result = llm_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
+result = gpt35_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
 result
 ```
 
