@@ -185,7 +185,7 @@ By default AutoGen automatically selects which agent should talk next. It uses m
 from autogen import GroupChat, GroupChatManager
 
 groupchat = GroupChat(
-    agents=[user_admin, planner, developer, tester, executor], messages=[], max_round=25
+    agents=[user_admin, planner, writer, critic, executor], messages=[], max_round=25
 )
 manager = GroupChatManager(groupchat=groupchat, llm_config=config)
 ```
