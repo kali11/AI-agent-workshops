@@ -11,7 +11,7 @@ In this lab you will learn how to build an AI agent and how to configure it.
 3. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6 langchainhub==0.1.15 langchain-community tavily-python==0.3.3
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16 qdrant-client==1.12.0 langchainhub==0.1.21 tavily-python==0.5.0
 ```
 
 4. Connecto to LansSmith for debuggin purposes:

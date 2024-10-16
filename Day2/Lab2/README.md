@@ -12,7 +12,7 @@ In this lab we will build a RAG that works with our knowledge base.
 3. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6 qdrant-client==1.9.1
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16 qdrant-client==1.12.0
 ```
 
 4. Connecto to LansSmith for debuggin purposes:
@@ -28,6 +28,7 @@ os.environ["LANGCHAIN_API_KEY"] = "<LANGSMITH_KEY>"
 5. Configure Qdrant client, embeddings model and LLM:
 
 ```python
+import os
 from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
 from google.colab import userdata

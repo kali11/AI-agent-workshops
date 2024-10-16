@@ -11,11 +11,11 @@ In this lab you will build a simple LinkedIn post generator.
 1. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16
 ```
 
 Here we install Langchain framework and langchain-openai responsible for OpenAI integration.
-1. In the next cell paste your OpenAI API key and create an instance of gpt-4 model:
+1. In the next cell create an instance of gpt-4o-mini model:
 
 ```python
 import os
@@ -27,10 +27,11 @@ from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain.output_parsers.openai_tools import PydanticToolsParser
 from langchain_core.pydantic_v1 import BaseModel, Field
+from google.colab import userdata
 
-os.environ["OPENAI_API_KEY"] = "YOUR_KEY_HERE"
+os.environ["OPENAI_API_KEY"] = userdata.get('openai_key')
 
-gpt4 = ChatOpenAI(model = "gpt-4")
+gpt4 = ChatOpenAI(model = "gpt-4o-mini")
 ```
 
 2. Switch on LangSmith:
@@ -87,7 +88,7 @@ dalle_metaprompt = ChatPromptTemplate.from_template("Generate a detailed prompt 
 
 ```python
 def run_dalle(prompt):
-  return DallEAPIWrapper().run(prompt + " High resolution, 2K, 4K, 8K, clear, good lighting, detailed, extremely detailed, sharp focus, intricate, beautiful, realistic+++, complementary colors, high quality, hyper detailed, masterpiece, best quality, artstation, stunning")
+  return DallEAPIWrapper(model='dall-e-3').run(prompt + " High resolution, 2K, 4K, 8K, clear, good lighting, detailed, extremely detailed, sharp focus, intricate, beautiful, realistic+++, complementary colors, high quality, hyper detailed, masterpiece, best quality, artstation, stunning")
 ```
 (Notice: We are adding to the prompt some image prompt engineering)
 
@@ -126,9 +127,10 @@ def hashtags_to_string(hashtag_generator):
   for tag in hashtag_generator[0].hastags:
     result += "#" + tag + " "
   return result
+
 hashtags_chain = gpt4.bind_tools(tools) | PydanticToolsParser(tools=tools) | RunnableLambda(hashtags_to_string)
 ```
-For the hashtags we used PydanticToolsParser that simple parses the tools output. If facilities usage of **hashtags_to_string** function
+For the hashtags we used PydanticToolsParser that simple parses the tools output. It facilities usage of **hashtags_to_string** function
 
 8. And finally! Here is our last chain:
 
@@ -142,14 +144,13 @@ chain = (
     | RunnableParallel(post = RunnablePassthrough() ,hashtags = hashtags_chain, image = dalle_chain)
 )
 ```
-We also used here **RunnablePassthrough** class that just passes the input into the output unchanged. This typically is used in conjuction with RunnableParallel to pass data through to a new key in the map.
+We've also used here **RunnablePassthrough** class that just passes the input into the output unchanged. This typically is used in conjuction with RunnableParallel to pass data to a new key in the map.
 9. Create helper function:
 
 ```python
 def display_image(image_url):
   try:
       import google.colab
-
       IN_COLAB = True
   except ImportError:
       IN_COLAB = False
@@ -157,15 +158,18 @@ def display_image(image_url):
   if IN_COLAB:
       from google.colab.patches import cv2_imshow  # for image display
       from skimage import io
+      import cv2
 
       image = io.imread(image_url)
-      cv2_imshow(image)
+      image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+      cv2_imshow(image_bgr)
   else:
       import cv2
       from skimage import io
 
       image = io.imread(image_url)
-      cv2.imshow("image", image)
+      image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+      cv2.imshow("image", image_bgr)
       cv2.waitKey(0)  # wait for a keyboard input
       cv2.destroyAllWindows()
 ```
@@ -176,6 +180,10 @@ def display_image(image_url):
 result = chain.invoke({"outline": outline, "language": "polish"})
 print(result["post"])
 print(result["hashtags"])
+```
+
+11. And display post image:
+```python
 display_image(result["image"])
 ```
 
@@ -185,6 +193,5 @@ display_image(result["image"])
 ## End lab
 
 ### Final questions and concerns:
-- Why generated images are so bad?
-- What happend when you enter the same dalle prompt into chatGPT (you can extract the prompt from Langsmith)
+- How many token were used?
 - how much money this lab consumed :)

@@ -22,15 +22,14 @@ For the vector database we will use Qdrant in a free cloud-based version.
 3. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6 qdrant-client==1.9.1 unstructured[pdf]
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16 qdrant-client==1.12.0 pypdf==5.0.1
 ```
-It will take some time because **unstructured** is a large library.
 
 Here we install:
 - Langchain framework 
 - langchain-openai responsible for OpenAI integration.
 - qdrant-client responsible for Qdrant integration.
-- unstructured[pdf] responsible for PDF parsing.
+- pypdf responsible for PDF parsing.
 
 4. In the left menu of Google Colab click **KEY** button. It is a place when you can store your secrets.
 5. Create two new secrets:
@@ -52,8 +51,10 @@ embeddings = OpenAIEmbeddings(model = "text-embedding-3-large")
 ```
 
 6. In this lab we will index documents about labor law in Poland. Download these two files:
-- asf
-- asf
+- kodeks_pracy.pdf
+- praca_rodzicielstwo.pdf
+
+(they can be found on the GitHub repo Day2/Lab1)
 
 In **Google Colab** click **Files** button on the left menu and create **docs** directory. Upload both files there.
 
@@ -66,8 +67,9 @@ In **Google Colab** click **Files** button on the left menu and create **docs** 
 
 ```python
 from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader
 
-loader = DirectoryLoader('./docs', glob="**/*.pdf", show_progress=True)
+loader = DirectoryLoader('./docs', glob="**/*.pdf", show_progress=True, loader_cls=PyPDFLoader)
 documents = loader.load()
 ```
 

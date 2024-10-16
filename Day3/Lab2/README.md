@@ -5,22 +5,23 @@ In this lab you will learn how to build an AI agent with multiple tools.
 - OpenAI API key with a few Euros credits
 - Google account
 - Tavily API key
+- Qdrant vector database with populated data (optionally) [see: Day2]
 
 ## Task 1: Set-up
 1. Open Google Colab: https://colab.research.google.com/
-2. Create new notebook, name it eg. **Workshop3 - la1**
+2. Create new notebook, name it eg. **Workshop3 - lab2**
 3. First, we need to install dependencies. In the first cell type and run:
 
 ```python
 !pip install --quiet \
-langchain==0.2.1 \
-langchain-openai==0.1.7 \
-qdrant-client==1.9.1 \
-langchainhub==0.1.15 \
-langchain-community==0.2.1 \
-tavily-python==0.3.3 \
-langchain-experimental==0.0.59 \
-SQLAlchemy==2.0.30
+langchain==0.2.16  \
+langchain-openai==0.1.23  \
+qdrant-client==1.12.0 \
+langchainhub==0.1.21 \
+langchain-community==0.2.16  \
+tavily-python==0.5.0 \
+langchain-experimental==0.0.65 \
+SQLAlchemy==2.0.36
 ```
 
 4. Connecto to LansSmith for debuggin purposes:

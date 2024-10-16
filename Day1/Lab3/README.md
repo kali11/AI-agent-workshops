@@ -11,19 +11,20 @@ In this lab you will build a chatbot that remembers conversation history. A chat
 1. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16
 ```
 
 Here we install Langchain framework and langchain-openai responsible for OpenAI integration.
-1. In the next cell paste your OpenAI API key and create an instance of gpt-3.5 model:
+1. In the next cell create an instance of gpt-4o model:
 
 ```python
 import os
 from langchain_openai import ChatOpenAI
+from google.colab import userdata
 
-os.environ["OPENAI_API_KEY"] = "YOUR_KEY_HERE"
+os.environ["OPENAI_API_KEY"] = userdata.get('openai_key')
 
-gpt35 = ChatOpenAI(model = "gpt-3.5-turbo")
+gpt4 = ChatOpenAI(model = "gpt-4o-mini")
 ```
 
 2. Switch on LangSmith:
@@ -42,7 +43,7 @@ LLM models and thier's APIs are usually stateless. That means we need to always 
 ```python
 from langchain_core.messages import HumanMessage
 
-gpt35.invoke(
+gpt4.invoke(
     [
         HumanMessage(
             content="What is the capital of Poland?"
@@ -56,7 +57,7 @@ You should see the result in the output as an instance of AIMessage.
 2. But we don't have a history:
 
 ```python
-gpt35.invoke([HumanMessage(content="What I was asking about?")])
+gpt4.invoke([HumanMessage(content="What I was asking about?")])
 ```
 
 3. We need to supply whole history:
@@ -64,7 +65,7 @@ gpt35.invoke([HumanMessage(content="What I was asking about?")])
 ```python
 from langchain_core.messages import AIMessage
 
-gpt35.invoke(
+gpt4.invoke(
     [
         HumanMessage(
             content="What is the capital of Poland?"
@@ -89,7 +90,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-chain = prompt | gpt35
+chain = prompt | gpt4
 ```
 
 ## Task 3: Add memory
@@ -115,7 +116,7 @@ chat_history.messages
 chain.invoke({"messages": chat_history.messages})
 ```
 
-3. Now the memory will be handled by Langchain. **RunnableWithMessageHistory** is a class that allows us to use memory with Runnables. A few remarks here:
+3. Now, the memory will be handled by Langchain. **RunnableWithMessageHistory** is a class that allows us to use memory with Runnables. A few remarks here:
 - **RunnableWithMessageHistory** encloses a chain
 - second argument is a function that returns chat history
 - third argument is a key for input. <u>It needs to match the placeholder in a promp template</u>
@@ -137,7 +138,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-chain = prompt | gpt35
+chain = prompt | gpt4
 
 chain_with_history = RunnableWithMessageHistory(
     chain,
@@ -172,70 +173,24 @@ chat_history.messages
 ```
 
 ## Task 4: Use pre-defined Langchain chains.
-Langchain comes with pre-defined chains. They are ready to use, with default prompting already defined. All of them can be found here: [chains](https://api.python.langchain.com/en/latest/chat_models/langchain_community.chat_models.openai.ChatOpenAI.html)
+Langchain comes with pre-defined chains. They are ready to use, with default prompting already defined. **Some of them already are or will be depricated!** All of them can be found here: [chains](https://python.langchain.com/v0.1/docs/modules/chains/)
 
-1. Let's use the ConversationChain. It is simple chain that already has a history.
+> Langchain rather withdraws from those chains in favor of LCEL chains and Langgraph (Langchain's extension). You can learn more about Langgrpah in Day 4 of this workshops.
+
+1. Let's use the LLMMathChain. It is simple chain optimized for mathematical operations.
 
 ```python
-from langchain.chains import ConversationChain
+from langchain.chains import LLMMathChain
 
-conversation = ConversationChain(
-    llm=gpt35,
-    verbose=True
-)
+llm_math = LLMMathChain.from_llm(gpt4, verbose=True)
 ```
 
 2. Let's test:
 
 ```python
-conversation.invoke(input="What is the capital of Poland?")
-conversation.invoke(input="What was my previous question?")
+llm_math.invoke(input="What is 9 raised to .9876 ower?")
 ```
 
-3. Langchain also comes with different memory types. All of them can be found [here](https://python.langchain.com/v0.1/docs/modules/memory/)
+3. Check Langgraph and see how to chain works under the hood.
 
-4. Let's use **ConversationBufferWindowMemory** that stores only k newest messages.
-
-```python
-from langchain.memory import ConversationBufferWindowMemory
-
-conversation = ConversationChain(
-    llm=gpt35,
-    verbose=True,
-    memory = ConversationBufferWindowMemory(k=2)
-)
-```
-
-5. And test:
-
-```python
-conversation.invoke(input="What is the capital of Poland?")
-conversation.invoke(input="How large is the city?")
-conversation.invoke(input="How is the population?")
-conversation.invoke(input="What was my first question?")
-```
-
-6. Let's also see **ConversationSummaryMemory**. It summarizes the whole conversation using the LLM. It is useful when we want to prevent the context from being too long. Notice, that we need to pass llm that will create the summary. See also what prompt is used:
-
-```python
-from langchain.memory import ConversationSummaryMemory
-
-memory = ConversationSummaryMemory(llm=gpt35)
-print(memory.prompt)
-
-conversation_with_summary = ConversationChain(
-    llm=gpt35,
-    memory=ConversationSummaryMemory(llm=gpt35),
-    verbose=True
-)
-```
-7. Test and see the history summary:
-
-```python
-conversation.invoke(input="What is the capital of Poland?")
-conversation.invoke(input="How large is the city?")
-conversation.invoke(input="What is the population?")
-conversation.invoke(input="What was my first question?")
-
-conversation.memory.load_memory_variables({})
-```
+## END LAB

@@ -5,7 +5,7 @@ In this lab you will learn:
 - How to use LCEL (Langchain expression language) to build different flows of LLM invocations.
 - How to use GPT tools (functions)
 - How to monitor you app
-- How to work with different models (gpt3.5, gpt4, dalle)
+- How to work with different models (gpt4o, gpt4o-mini, dalle)
 
 ## Prerequisutes:
 - OpenAI API key with a few Euros credits
@@ -14,23 +14,27 @@ In this lab you will learn:
 ## Task 1: First LLM invocations
 1. Open Google Colab: https://colab.research.google.com/
 1. Create new notebook, name it eg. **Workshop1 - lab1**
+1. In the left menu of Google Colab click **KEY** button. It is a place when you can store your secrets.
+1. Create one new secrets and put your open ai key there:
+- openai_key
 1. First, we need to install dependencies. In the first cell type and run:\
-```!pip install --quiet langchain==0.1.20 langchain-openai==0.1.6```\
+```!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16```\
 Here we install Langchain framework and langchain-openai responsible for OpenAI integration.
-1. In the next cell paste your OpenAI API key and create an instance of gpt-3.5 model:
+1. In the next cell paste your OpenAI API key and create an instance of gpt-4o-mini model:
 
 ```python
 import os
 from langchain_openai import ChatOpenAI
+from google.colab import userdata
 
-os.environ["OPENAI_API_KEY"] = "YOUR_KEY_HERE"
+os.environ["OPENAI_API_KEY"] = userdata.get('openai_key')
 
-gpt35 = ChatOpenAI(model = "gpt-3.5-turbo")
+llm = ChatOpenAI(model = "gpt-4o-mini")
 ```
 **ChatOpenAI** is a Langchain class. You can add here more parameters like temperature, max_tokens etc. [See in docs](https://api.python.langchain.com/en/latest/chat_models/langchain_community.chat_models.openai.ChatOpenAI.html)
 5. Invoke the model with simple prompt:
 ```python
-gpt35.invoke("tell ma a joke about pizza")
+llm.invoke("tell ma a joke about pizza")
 ```
 6. Observe the output. Notice tokens usage.
 
@@ -49,7 +53,7 @@ os.environ["LANGCHAIN_PROJECT"] = "ai-agent-workshops"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 os.environ["LANGCHAIN_API_KEY"] = "YOUR_LANGSMITH_KEY"
 ```
-6. Run one more time the call above that invokes gpt-3.5 model.
+6. Run one more time the call above that invokes gpt-4o-mini model.
 7. In LangSmith click **Projects** in left menu, find "ai-agent-workshops" project and observe the tracing.
 8. Now LangSmith is switched on. It will be useful in next tasks. Free plan is sufficient.
 
@@ -71,17 +75,17 @@ prompt.invoke({"prompt": "How to make pizza?", "role": "cook"})
 2. Notice that our prompt contains two messages: **SystemMessage** and **HumanMessage**.
 2. Now let's create a first chain using LCEL (Langchain expression language). We will use pipe operator (|):
 ```python
-chain = prompt | gpt35
+chain = prompt | llm
 chain.invoke({"prompt": "How to make pizza?", "role": "cook"})
 ```
 2. As a result we get an **AIMessage**.
-2. GPT-3.5 is a text-2-text model. Very often we want to extract raw text. Langchain comes here with different parsers. Here we will use simple **StrOutpurParser**:
+2. GPT models are text-2-text model. Very often we want to extract raw text. Langchain comes here with different parsers. Here we will use simple **StrOutpurParser**:
 
 ```python
 from langchain_core.output_parsers import StrOutputParser
 
 output_parser = StrOutputParser()
-chain = prompt | gpt35 | output_parser
+chain = prompt | llm | output_parser
 chain.invoke({"prompt": "How to make pizza?", "role": "cook"})
 ```
 7. You can also check other available parsers here: https://python.langchain.com/v0.1/docs/modules/model_io/output_parsers/
@@ -93,16 +97,16 @@ chain.invoke({"prompt": "How to make pizza?", "role": "cook"})
 for s in chain.stream({"prompt": "How to make pizza?", "role": "cook"}):
     print(s, end="", flush=True)
 ```
-10. It is important that each connected **Runnables** (prompt | gpt35 and gpt35 | output_parser) needs to be compatible in terms of schema. You can always check the schema of each chain component:
+10. It is important that each connected **Runnables** (prompt | llm | output_parser) needs to be compatible in terms of schema. You can always check the schema of each chain component:
 ```python
 print(chain.input_schema.schema())
 print(chain.output_schema.schema())
 ```
 
 ## Task 4: Longer chains
-1. Now let's build something a little bit longer and let's switch to GPT-4. Make an instance of a model:
+1. Now let's build something a little bit longer and let's switch to GPT-4o. Make an instance of a model:
 ```python
-gpt4 = ChatOpenAI(model = "gpt-4")
+gpt4o = ChatOpenAI(model = "gpt-4o")
 ```
 1. Now we will build a chain that will:
 - Ask for a dish recipe
@@ -115,7 +119,7 @@ recipe_prompt = ChatPromptTemplate.from_messages([
     ("user", "Give me a recipe for {dish}")
 ])
 
-chain = recipe_prompt | gpt4 | output_parser
+chain = recipe_prompt | gpt4o | output_parser
 print(chain.invoke({"dish": "pizza"}))
 ```
 4. In a new cell, create second prompt:
@@ -129,11 +133,11 @@ ingredients_prompt = ChatPromptTemplate.from_template("Based on the recipe: {rec
 ```python
 chain2 = (
     recipe_prompt
-    | gpt4
+    | gpt4o
     | output_parser
     | (lambda input: {"recipe": input})
     | ingredients_prompt
-    | gpt35
+    | llm
     | output_parser
 )
 print(chain2.invoke({"dish": "pizza"}))
@@ -145,7 +149,7 @@ chain3 = (
     chain
     | (lambda input: {"recipe": input})
     | ingredients_prompt
-    | gpt35
+    | llm
     | output_parser
 )
 print(chain3.invoke({"dish": "pizza"}))
@@ -153,7 +157,7 @@ print(chain3.invoke({"dish": "pizza"}))
 7. Investigate LangSmith debug
 
 ## Task 5: Tool calling
-Most of new models support tools calling (previously function calling). This mechanism is used to return structured output from LLM. Remember that this mechanism does not call any function/tool. It just prepares the input.
+Most of new models support tools calling (previously called function calling). This mechanism is used to return structured output from LLM. Remember that this mechanism does not call any function/tool. It just prepares the input.
 
 1. In Langchain we can define tools in several ways. For example using @tool decorator or using Pydantic types. Here we define two tools (**add** and **multiply**) in two different ways:
 
@@ -185,12 +189,12 @@ tools = [add, multiply_tool]
 2. Now we need to bind these tools to our LLM so it can invoke them. Note, that by default LLM will decide if it wants to use a tool or not. We can also enforce it.
 
 ```python
-gpt35_with_tools = gpt35.bind_tools(tools)
+llm_with_tools = llm.bind_tools(tools)
 ```
 
 3. Let's call it and observe how LLM model has used the tools:
 ```python
-result = gpt35_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
+result = llm_with_tools.invoke("What is 3 * 8? Also, what is 8 + 63?")
 result
 ```
 
@@ -215,17 +219,19 @@ add.invoke(add_args)
 6. Tool calling are also traced by LangSmith.
 
 ## Task 6: Image generation with Dall-e
-In Lanchain we have a **DallEAPIWrapper** class for using Dall-e model. In the below example we will first use gpt-3.5 to generate a prompt for Dall-e and then generate an image. Note that Dall-e accepts prompt of maximum 1000 characters. That is why we will limit max_token to 200.
+
+
+In Lanchain we have a **DallEAPIWrapper** class for using Dall-e model. In the below example we will first use gpt-4o-mini to generate a prompt for Dall-e and then generate an image. Note that Dall-e 3 accepts prompt of maximum 4000 characters. That is why we will limit max_token to 800.
 
 1. In a new cell type:
 
 ```python
 from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 
-gpt35_mt = ChatOpenAI(max_tokens=200)
+llm = ChatOpenAI(max_tokens=800)
 
 prompt = ChatPromptTemplate.from_template("Generate a detailed prompt to generate an image based on the following description: {image_desc}.")
-dalle_chain = prompt | gpt35_mt | output_parser
+dalle_chain = prompt | llm | output_parser
 dalle_prompt = dalle_chain.invoke({"image_desc": "cat at home"})
 print(dalle_prompt)
 ```
@@ -236,7 +242,6 @@ print(dalle_prompt)
 def display_image(image_url):
   try:
       import google.colab
-
       IN_COLAB = True
   except ImportError:
       IN_COLAB = False
@@ -244,15 +249,18 @@ def display_image(image_url):
   if IN_COLAB:
       from google.colab.patches import cv2_imshow  # for image display
       from skimage import io
+      import cv2
 
       image = io.imread(image_url)
-      cv2_imshow(image)
+      image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+      cv2_imshow(image_bgr)
   else:
       import cv2
       from skimage import io
 
       image = io.imread(image_url)
-      cv2.imshow("image", image)
+      image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+      cv2.imshow("image", image_bgr)
       cv2.waitKey(0)  # wait for a keyboard input
       cv2.destroyAllWindows()
 ```
@@ -260,10 +268,12 @@ def display_image(image_url):
 3. And finally let's call dall-e and display the image:
 
 ```python
-image_url = DallEAPIWrapper().run(dalle_prompt)
+image_url = DallEAPIWrapper(model = "dall-e-3").run(dalle_prompt)
 print(image_url)
 display_image(image_url)
 ```
 image_url variable will point to a public image on Azure blob storage.
+
+4. (For fun) You can change the dall-e model to 'dall-e-2' and observe the difference :)
 
 ## End lab
