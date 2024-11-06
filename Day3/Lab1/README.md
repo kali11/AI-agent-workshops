@@ -11,17 +11,18 @@ In this lab you will learn how to build an AI agent and how to configure it.
 3. First, we need to install dependencies. In the first cell type and run:
 
 ```python
-!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16 qdrant-client==1.12.0 langchainhub==0.1.21 tavily-python==0.5.0
+!pip install --quiet langchain==0.2.16 langchain-openai==0.1.23 langchain-community==0.2.16 qdrant-client==1.12.0 langchainhub==0.1.21 tavily-python==0.5.0 langgraph==0.2.39
 ```
 
 4. Connecto to LansSmith for debuggin purposes:
 
 ```python
 import os
+from google.colab import userdata
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "ai-workshops-day3"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_API_KEY"] = "<LANGSMITH_KEY>"
+os.environ["LANGCHAIN_API_KEY"] = userdata.get('langsmith_key')
 ```
 
 5. Go to https://tavily.com/ and create a free account there. Tavily is a search engine API, it integrates well with Langchain.
@@ -32,10 +33,16 @@ os.environ["LANGCHAIN_API_KEY"] = "<LANGSMITH_KEY>"
 
 ```python
 from google.colab import userdata
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 
-os.environ["OPENAI_API_KEY"] = userdata.get('openai_key')
-gpt4 = ChatOpenAI(model = "gpt-4o", temperature = 0)
+
+os.environ["AZURE_OPENAI_ENDPOINT"] = "https://piotropenai.openai.azure.com/"
+os.environ["AZURE_OPENAI_API_KEY"] = "KEY"
+
+gpt4 = AzureChatOpenAI(
+    azure_deployment="gpt-4o",
+    api_version="2023-06-01-preview"
+)
 ```
 
 ## Task 2: Create the agent
@@ -59,128 +66,77 @@ tavily_tool.invoke("funny cats")
 3. Let's add agent's prompt. Note the {agent_scratchpad} placeholder for agent's notes
 
 ```python
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
-)
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import SystemMessage
 
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", "You are a helpful assistant. Use all the tools to answer the question"),
-        ("human", "{input}"),
-        ("placeholder", "{agent_scratchpad}"),
-    ]
-)
+
+system_message = SystemMessage(
+        content="You are a helpful assistant. Use all the tools to answer the question"
+    )
 ```
 
 4. Now let's create the agent. We are using here **Tool Calling** agent which requires a LLM with tools support. Most of new models support it (OpenAI, Anthropic, Gemini, Mistral etc.). We also create an instance of AgentExecutor class which is responsible for running the agent.
 
 ```python
-agent = create_tool_calling_agent(gpt4, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent_executor = create_react_agent(gpt4, tools, state_modifier=system_message)
 ```
 
 5. Ok, let's invoke it:
 
 ```python
-agent_executor.invoke({"input": "Who is the coach of polish voleyball teams and what is his age?"})
+agent_executor.invoke({"messages": [("human", "Who is the coach of polish voleyball teams and what is his age?")]})
+
 ```
 
 6. Try something more sophisticated:
 
 ```python
-agent_executor.invoke({"input": "Which teams played in the last final of man's voleyball world cup? What was the squad of each team? Give me also a nationality of each coach"})
+agent_executor.invoke({"messages": [("human", "Which teams played in the last final of man's voleyball world cup? What was the squad of each team? Give me also a nationality of each coach")]})
 ```
 
 7. Or give some hints:
 
 ```python
-agent_executor.invoke({"input": "Which teams played in the last final of man's voleyball world cup? What was the squad of each team? Give me also a nationality of each coach. When responding first check the year of last world cup "})
+agent_executor.invoke({"messages": [("human", "Which teams played in the last final of man's voleyball world cup? What was the squad of each team? Give me also a nationality of each coach. When responding first check the year of last world cup")]})
 ```
 
 ## Task 3: Add history to the agent
-1. Let's modify the prompt:
+
+2.
 
 ```python
-history_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """You are a helpful assistant. Use all the tools to answer the question""",
-        ),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad", optional=True),
-    ]
-)
-```
+from langgraph.checkpoint.memory import MemorySaver
 
-2. And a memory. We will use simple in-memory **ChatMessageHistory** class. Note, that "chat_history" key needs to match the placeholder name in a prompt.
-
-```python
-from langchain.memory import ConversationBufferMemory
-from langchain.memory import ChatMessageHistory
-
-chat_history = ChatMessageHistory()
-
-memory = ConversationBufferMemory(
-    chat_memory=chat_history,
-    memory_key='chat_history',
-    return_messages=True,
-    input_key='input',
-    output_key='output'
-)
+memory = MemorySaver()
 ```
 
 3. Let's create the agent again with memory now:
 
 ```python
-agent = create_tool_calling_agent(gpt4, tools, history_prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True)
+agent_executor = create_react_agent(
+        gpt4,
+        tools,
+        state_modifier=system_message,
+        checkpointer=memory
+    )
+
+config = {
+        "configurable": {
+            "thread_id": "123"
+        }
+    }
 ```
 
 4. And test it:
 ```python
-agent_executor.invoke({"input": "Which teams won the last final of man's voleyball world cup? "})
+agent_executor.invoke({"messages": [("human", "Which teams won the last final of man's voleyball world cup?")]}, config=config)
+    
 
-agent_executor.invoke({"input": "Give me a squad of Polish team"})
+agent_executor.invoke({"messages": [("human", "Give me a squad of Polish team")]}, config=config)
+    
 
-agent_executor.invoke({"input": "What was my last question?"})
+agent_executor.invoke({"messages": [("human", "What was my last question?")]}, config=config)
 ```
 
-5. We can also add flag that will show us how agent was "thinking":
-
-```python
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True, return_intermediate_steps=True)
-agent_executor.invoke({"input": "Search for information about wombats"})
-```
-
-## Task 4: Use ReAct agent
-1. Now let's use ReAct agent that doesn't use tool calling but [ReAct prompting](https://www.promptingguide.ai/techniques/react) instead. 
-
-2. We will use Langchain hub here. It is a public repository with prompts. Go to: https://smith.langchain.com/hub and look for "hwchase17/react". Inspect how this prompt is build.
-
-3. Let's use this prompt in a code:
-
-```python
-from langchain import hub
-from langchain.agents import create_react_agent
-
-prompt = hub.pull("hwchase17/react")
-```
-
-4. And let's create the agent and agent executor:
-
-```python
-agent = create_react_agent(gpt4, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True)
-```
-
-5. See the agent in action:
-
-```python
-agent_executor.invoke({"input": "Which teams played in the last final of man's voleyball world cup? What was the squad of each team? Give me also a nationality of each coach. When responding first check the year of last world cup "})
-```
 
 ## End lab

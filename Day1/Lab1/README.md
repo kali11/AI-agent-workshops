@@ -23,15 +23,20 @@ Here we install Langchain framework and langchain-openai responsible for OpenAI 
 1. In the next cell paste your OpenAI API key and create an instance of gpt-4o-mini model:
 
 ```python
-import os
-from langchain_openai import ChatOpenAI
 from google.colab import userdata
+from langchain_openai import AzureChatOpenAI
 
-os.environ["OPENAI_API_KEY"] = userdata.get('openai_key')
 
-llm = ChatOpenAI(model = "gpt-4o-mini")
+os.environ["AZURE_OPENAI_ENDPOINT"] = "https://piotropenai.openai.azure.com/"
+os.environ["AZURE_OPENAI_API_KEY"] = "KEY"
+
+gpt4 = AzureChatOpenAI(
+    azure_deployment="gpt-4o",
+    api_version="2023-06-01-preview"
+)
 ```
-**ChatOpenAI** is a Langchain class. You can add here more parameters like temperature, max_tokens etc. [See in docs](https://api.python.langchain.com/en/latest/chat_models/langchain_community.chat_models.openai.ChatOpenAI.html)
+**AzureChatOpenAI** is a Langchain class. You can add here more parameters like temperature, max_tokens etc. [See in docs](https://api.python.langchain.com/en/latest/chat_models/langchain_community.chat_models.openai.ChatOpenAI.html)
+
 5. Invoke the model with simple prompt:
 ```python
 llm.invoke("tell ma a joke about pizza")
