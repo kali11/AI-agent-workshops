@@ -111,7 +111,10 @@ print(chain.output_schema.schema())
 ## Task 4: Longer chains
 1. Now let's build something a little bit longer and let's switch to GPT-4o. Make an instance of a model:
 ```python
-gpt4o = ChatOpenAI(model = "gpt-4o")
+gpt4o = AzureChatOpenAI(
+    azure_deployment="gpt-4o",
+    api_version="2023-06-01-preview"
+)
 ```
 1. Now we will build a chain that will:
 - Ask for a dish recipe
