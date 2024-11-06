@@ -25,12 +25,12 @@ Here we install Langchain framework and langchain-openai responsible for OpenAI 
 ```python
 from google.colab import userdata
 from langchain_openai import AzureChatOpenAI
-
+import os
 
 os.environ["AZURE_OPENAI_ENDPOINT"] = "https://piotropenai.openai.azure.com/"
 os.environ["AZURE_OPENAI_API_KEY"] = "KEY"
 
-gpt4 = AzureChatOpenAI(
+llm = AzureChatOpenAI(
     azure_deployment="gpt-4o",
     api_version="2023-06-01-preview"
 )
